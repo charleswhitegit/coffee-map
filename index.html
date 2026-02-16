@@ -56,10 +56,46 @@
 
   /* ── Overlap panel ── */
   .overlap-panel {
-    padding: 14px 18px;
+    padding: 0;
     min-width: 280px;
   }
-  .overlap-panel h3 {
+  .overlap-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 18px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+  }
+  .overlap-header:hover { background: #f8f8f8; }
+  .overlap-header h3 {
+    margin: 0;
+    font-size: 15px;
+  }
+  .overlap-chevron {
+    font-size: 18px;
+    color: #999;
+    transition: transform 0.25s ease;
+    line-height: 1;
+  }
+  .overlap-panel.collapsed .overlap-chevron {
+    transform: rotate(-90deg);
+  }
+  .overlap-body {
+    padding: 0 18px 14px;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.25s ease;
+    max-height: 600px;
+    opacity: 1;
+  }
+  .overlap-panel.collapsed .overlap-body {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    opacity: 0;
+  }
+  .overlap-panel h3.section-head {
     margin: 0 0 8px 0;
     font-size: 15px;
     border-bottom: 1px solid #eee;
@@ -235,7 +271,8 @@ const overlapCtrl = L.control({ position: "bottomright" });
 overlapCtrl.onAdd = function() {
   const div = L.DomUtil.create("div", "panel overlap-panel");
   const keys = oa.keys;
-  let html = '<h3>City Overlap Matrix</h3>';
+  let html = '<div class="overlap-header" id="overlap-toggle"><h3>Overlap Analysis</h3><span class="overlap-chevron">▾</span></div>';
+  html += '<div class="overlap-body">';
   html += '<table class="overlap-table"><tr><th></th>';
   keys.forEach(k => html += `<th style="color:${CHAINS[k].color}">${CHAINS[k].name}</th>`);
   html += '</tr>';
@@ -264,11 +301,12 @@ overlapCtrl.onAdd = function() {
   html += '<div class="note">Diagonal = total unique cities.<br>Off-diagonal = shared cities between pair.</div>';
 
   // State overlap summary
-  html += '<h3 style="margin-top:12px;border-bottom:1px solid #eee;padding-bottom:6px;">States</h3>';
+  html += '<h3 class="section-head" style="margin-top:12px;">States</h3>';
   keys.forEach(k => {
     html += `<div style="display:flex;justify-content:space-between"><span style="color:${CHAINS[k].color}">${CHAINS[k].name}</span><strong>${oa.stateSets[k].size} states</strong></div>`;
   });
   html += `<div style="margin-top:6px;font-weight:600">Total locations: ${Object.values(raw).reduce((s,a)=>s+a.length,0).toLocaleString()}</div>`;
+  html += '</div>'; // close overlap-body
 
   div.innerHTML = html;
   L.DomEvent.disableClickPropagation(div);
@@ -278,6 +316,13 @@ overlapCtrl.addTo(map);
 
 // ── Toggle logic ──
 document.addEventListener("click", e => {
+  // Overlap panel collapse
+  const toggle = e.target.closest("#overlap-toggle");
+  if (toggle) {
+    toggle.closest(".overlap-panel").classList.toggle("collapsed");
+    return;
+  }
+
   const row = e.target.closest(".legend-row");
   if (!row) return;
   const key = row.dataset.chain;
